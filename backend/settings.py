@@ -28,7 +28,12 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key-only')
 DEBUG = False
 
 # ALLOWED_HOSTS = []
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1', "mtrain-backend-production.up.railway.app/questionnaire/api/").split(',')
+ALLOWED_HOSTS = [
+    'mtrain-backend-production.up.railway.app',
+    'localhost',
+    '127.0.0.1',
+    '.railway.app',
+]
 
 
 # Application definition
