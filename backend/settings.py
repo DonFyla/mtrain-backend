@@ -113,24 +113,13 @@ WSGI_APPLICATION = "backend.wsgi.application"
 #         "NAME": BASE_DIR / "db.sqlite3",
 #     }
 # }
-# Database configuration
-if 'DATABASE_URL' in os.environ:
-    # Production - Use Railway's PostgreSQL
-    DATABASES = {
-        'default': dj_database_url.config(
-            default=os.environ['DATABASE_URL'],
-            conn_max_age=600,
-            ssl_require=True
-        )
-    }
-else:
-    # Development - Use SQLite but RAILWAY SHOULD NEVER REACH HERE
-    # If we reach here in Railway, crash intentionally with a clear error
-    raise Exception(
-        "DATABASE_URL environment variable is missing! "
-        "Railway should provide a PostgreSQL database. "
-        "Please add a PostgreSQL database in your Railway project settings."
+DATABASES = {
+    'default': dj_database_url.config(
+        default='sqlite:///db.sqlite3',
+        conn_max_age=600,
+        ssl_require=True
     )
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
