@@ -114,11 +114,23 @@ WSGI_APPLICATION = "backend.wsgi.application"
 #     }
 # }
 DATABASES = {
-    'default': dj_database_url.config(
-        default='sqlite:///db.sqlite3',  # Fallback for local dev
-        conn_max_age=600
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('DATABASE_NAME', 'railway'),
+        'USER': os.environ.get('DATABASE_USER', 'postgres'),
+        'PASSWORD': os.environ.get('DATABASE_PASSWORD', ''),
+        'HOST': os.environ.get('DATABASE_HOST', 'localhost'),
+        'PORT': os.environ.get('DATABASE_PORT', '5432'),
+    }
 }
+
+# Fallback to dj_database_url if DATABASE_URL is present (Railway provides this)
+if 'DATABASE_URL' in os.environ:
+    DATABASES['default'] = dj_database_url.config(
+        default=os.environ['DATABASE_URL'],
+        conn_max_age=600,
+        ssl_require=True
+    )
 
 
 # Password validation
