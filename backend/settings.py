@@ -35,6 +35,30 @@ ALLOWED_HOSTS = [
     '.railway.app',
 ]
 
+# Add this to your settings.py
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'DEBUG',
+    },
+}
+
+# Test database connection
+try:
+    from django.db import connection
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT 1")
+    print("✅ Database connection successful")
+except Exception as e:
+    print(f"❌ Database connection failed: {e}")
+
 
 # Application definition
 
