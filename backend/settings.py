@@ -78,7 +78,7 @@ CORS_ALLOW_METHODS = [
 ]
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "themovingtrain.org"    # Next.js dev
+    "https://themovingtrain.org"    # Next.js dev
 ]
 
 REST_FRAMEWORK = {"DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"]}
