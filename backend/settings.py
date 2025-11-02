@@ -22,13 +22,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-^jb$l4=zta)#d(-1fqi5sel#$7uh3_qa*hskqg^aobu-+lgfzl"
+SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key-only')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
 # ALLOWED_HOSTS = []
-ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1', "mtrain-backend-production.up.railway.app/questionnaire/api/").split(',')
 
 
 # Application definition
@@ -45,6 +45,11 @@ INSTALLED_APPS = [
     "questionnaire",
     "widget_tweaks",
     
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://mtrain-backend-production.up.railway.app',
+    'https://*.railway.app',
 ]
 
 MIDDLEWARE = [
