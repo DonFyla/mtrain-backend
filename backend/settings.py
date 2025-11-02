@@ -113,25 +113,24 @@ WSGI_APPLICATION = "backend.wsgi.application"
 #         "NAME": BASE_DIR / "db.sqlite3",
 #     }
 # }
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DATABASE_NAME', 'railway'),
-        'USER': os.environ.get('DATABASE_USER', 'postgres'),
-        'PASSWORD': os.environ.get('DATABASE_PASSWORD', ''),
-        'HOST': os.environ.get('DATABASE_HOST', 'localhost'),
-        'PORT': os.environ.get('DATABASE_PORT', '5432'),
-    }
-}
-
-# Fallback to dj_database_url if DATABASE_URL is present (Railway provides this)
+# Database configuration
 if 'DATABASE_URL' in os.environ:
-    DATABASES['default'] = dj_database_url.config(
-        default=os.environ['DATABASE_URL'],
-        conn_max_age=600,
-        ssl_require=True
-    )
-
+    # Production - Use Railway's database
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ['DATABASE_URL'],
+            conn_max_age=600,
+            ssl_require=True
+        )
+    }
+else:
+    # Development - Use SQLite
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
