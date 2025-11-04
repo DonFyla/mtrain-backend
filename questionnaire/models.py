@@ -22,7 +22,7 @@ class Qtaker(models.Model):
     name = models.CharField(null=False, max_length=100 )
     age = models.IntegerField(blank=False, null=False)
     email = models.EmailField(null=True)
-    skill = models.CharField(choices=chess_level, default="beginner")
+    skill = models.CharField(choices=chess_level, default="beginner", max_length=100)
     test_result = models.FloatField(null=True)
     current_score = models.IntegerField(default=0)
 
