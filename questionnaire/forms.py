@@ -6,7 +6,7 @@ class Userform(forms.ModelForm):
     class Meta:
         model = Qtaker
         fields = "__all__"
-        exclude = ['test_result']
+        exclude = ['test_result',"date_taken"]
 
 
 class AnswerForm(forms.Form):

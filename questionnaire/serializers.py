@@ -6,8 +6,10 @@ class QtakerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Qtaker
         fields = ['id', 'name', 'age', 'email', 'skill', 'test_result']
-        read_only_fields = ['test_result']
-
+        read_only_fields = ['test_result',"date_taken"]
+        extra_kwargs = {
+            'email': {'required': False, 'allow_blank': True}
+        }
 class QuestionnaireSerializer(serializers.ModelSerializer):
     class Meta:
         model = Questionnaire
