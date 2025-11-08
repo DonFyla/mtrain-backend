@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from ckeditor.fields import RichTextField 
+from ckeditor_uploader.fields import RichTextUploadingField
 # Create your models here.
 
 
@@ -41,7 +43,7 @@ class Qtaker(models.Model):
 class Question(models.Model):
     
     questionnaire = models.ForeignKey(Questionnaire, on_delete=models.CASCADE)
-    question = models.TextField()
+    question = RichTextUploadingField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)

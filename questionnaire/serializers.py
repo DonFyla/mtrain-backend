@@ -20,6 +20,12 @@ class QuestionSerializer(serializers.ModelSerializer):
         model = Question
         fields = ['id', 'questionnaire', 'question', 'placement', 'created_at', 'created_by']
 
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        # Ensure the HTML content is properly rendered
+        representation['question'] = instance.question
+        return representation    
+
 class OptionsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Options
