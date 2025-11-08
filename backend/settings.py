@@ -246,6 +246,8 @@ INSTALLED_APPS = [
     "questionnaire",
     "widget_tweaks",
     "corsheaders",
+    'ckeditor',
+    'ckeditor_uploader',  # for image uploads
 
 ]
 
@@ -370,15 +372,33 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
-STATIC_ROOT = "/app/static"
-STATICFILES_DIRS = [BASE_DIR / "app_static"]
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"  # Change this to be relative to your project
+STATICFILES_DIRS = [BASE_DIR / "static"]  # Changed from "app_static" to "static" for consistency
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+if not DEBUG:
+    # Ensure media files are served in production
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+    
+    # You might need to configure a cloud storage for media files in production
+    # For now, let's make sure the paths are consistent
+    MEDIA_ROOT = BASE_DIR / 'media'
 
-MEDIA_URL = "/media/"
-MEDIA_ROOT = "/app/static/media/"
+# For CKEditor
+CKEDITOR_UPLOAD_PATH = "uploads/"
+CKEDITOR_CONFIGS = {
+    'default': {
+        'toolbar': 'full',
+        'height': 300,
+        'width': '100%',
+        'filebrowserUploadUrl': '/ckeditor/upload/',
+        'filebrowserBrowseUrl': '/ckeditor/browse/',
+    },
+}
