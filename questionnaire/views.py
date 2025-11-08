@@ -172,6 +172,8 @@ def result(request, Qtakerid):
         
         # Use database score 
         percent = qtaker.current_score * 100 / total if total > 0 else 0
+        qtaker.test_result = percent 
+        qtaker.save()
         
         # Check if user passed (score > 60%)
         passed = percent > 60
@@ -180,6 +182,8 @@ def result(request, Qtakerid):
         
         if passed:
             next_skill = Qtaker.get_next_skill(skill)
+            qtaker.skill = next_skill
+            qtaker.save()
             # Get next questionnaire if it exists
             try:
                 next_questionnaire = Questionnaire.objects.get(title=next_skill)

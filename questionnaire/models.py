@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 # Create your models here.
 
 
@@ -22,6 +23,7 @@ class Qtaker(models.Model):
     name = models.CharField(null=False, max_length=100 )
     age = models.IntegerField(blank=False, null=False)
     email = models.EmailField(null=True)
+    date_taken = models.DateTimeField(auto_now_add=True,verbose_name="Event Date and Time")
     skill = models.CharField(choices=chess_level, default="beginner", max_length=100)
     test_result = models.FloatField(null=True)
     current_score = models.IntegerField(default=0)

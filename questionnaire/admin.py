@@ -7,7 +7,7 @@ from .models import (
 
 @admin.register(Qtaker)
 class QtakerAdmin(admin.ModelAdmin):
-    list_display = ["name","age","email","skill","test_result"]
+    list_display = ["name","age","email","skill","test_result","date_taken"]
 
 class AnswerInline(admin.TabularInline):
     model = Options    
