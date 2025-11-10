@@ -34,10 +34,13 @@ class Qtaker(models.Model):
     def get_next_skill(cls, current_skill):
         skills = [choice[0] for choice in cls.chess_level]  # Extract skill values from choices
         try:
-            next_skill_index = skills.index(current_skill) + 1  # Get index of current skill + 1
-            return skills[next_skill_index]  # Return the next skill
-        except IndexError:
-            return skills[-1]  # If current skill is the last, return the last skill again
+            current_index = skills.index(current_skill)
+            if current_index + 1 < len(skills):
+                return skills[current_index + 1]  # Return the next skill
+            else:
+                return None  # No next level - return None instead of the last skill
+        except (IndexError, ValueError):
+            return None  # Return None for any errors
 
 
 class Question(models.Model):

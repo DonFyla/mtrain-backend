@@ -47,7 +47,7 @@ def QtakerView(request):
                 
         else:
             print(f"Serializer errors: {serializer.errors}")
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error":serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
     else:
         # For GET request - use QtakerSerializer
         print("Processing GET request")
@@ -164,63 +164,69 @@ def view_answer(request, Qtakerid, id):
 @api_view(['GET'])
 def result(request, Qtakerid):
     qtaker = get_object_or_404(Qtaker, id=Qtakerid)
-    skill = qtaker.skill
+    original_skill = qtaker.skill
     
     try:
-        questionnaire = Questionnaire.objects.get(title=skill)
+        questionnaire = Questionnaire.objects.get(title=original_skill)
         total = Question.objects.filter(questionnaire=questionnaire).count()
         
-        # Use database score 
         percent = qtaker.current_score * 100 / total if total > 0 else 0
         qtaker.test_result = percent 
-        qtaker.save()
         
-        # Check if user passed (score > 60%)
         passed = percent > 60
         next_skill = None
         next_questionnaire_data = None
         
         if passed:
-            next_skill = Qtaker.get_next_skill(skill)
-            qtaker.skill = next_skill
-            qtaker.save()
-            # Get next questionnaire if it exists
-            try:
-                next_questionnaire = Questionnaire.objects.get(title=next_skill)
-                questions = Question.objects.filter(questionnaire=next_questionnaire).order_by("placement")
-                next_question = questions.first() if questions.exists() else None
-                
-                next_questionnaire_data = {
-                    "id": next_questionnaire.id,
-                    "title": next_questionnaire.title,
-                    "first_question_id": next_question.id if next_question else None
-                }
-            except Questionnaire.DoesNotExist:
-                next_questionnaire_data = None
-        
-        # Reset score for next assessment
-        qtaker.current_score = 0
-        qtaker.save()
+            next_skill = Qtaker.get_next_skill(original_skill)
+            
+            # Only proceed if there's actually a next skill (not None)
+            if next_skill:
+                try:
+                    next_questionnaire = Questionnaire.objects.get(title=next_skill)
+                    questions = Question.objects.filter(questionnaire=next_questionnaire).order_by("placement")
+                    next_question = questions.first() if questions.exists() else None
+                    
+                    if next_question:
+                        next_questionnaire_data = {
+                            "id": next_questionnaire.id,
+                            "title": next_questionnaire.title,
+                            "first_question_id": next_question.id
+                        }
+                except Questionnaire.DoesNotExist:
+                    # Next skill exists but no questionnaire found
+                    next_questionnaire_data = None
         
         response_data = {
+            "current_skill": original_skill,
             "current_questionnaire": {
                 "id": questionnaire.id,
                 "title": questionnaire.title
             },
             "qtaker": QtakerSerializer(qtaker).data,
-            "score": qtaker.current_score,  # This will be 0 since we reset it
+            "score": qtaker.current_score,
             "total_questions": total,
             "percentage": percent,
             "passed": passed,
-            "next_skill": next_skill,
-            "next_questionnaire": next_questionnaire_data
+            "next_skill": next_skill,  # This will be None for expert level
+            "next_questionnaire": next_questionnaire_data  # This will be None for expert level
         }
         
-        # print("Result API response:", response_data)
+        print("=== BACKEND DEBUG ===")
+        print(f"Original skill: {original_skill}")
+        print(f"Next skill: {next_skill}")
+        print(f"Next questionnaire: {next_questionnaire_data}")
+        print("=====================")
+        
+        # Update qtaker only if there's a valid next skill
+        if passed and next_skill:
+            qtaker.skill = next_skill
+        qtaker.current_score = 0
+        qtaker.save()
         
         return Response(response_data)
         
     except Questionnaire.DoesNotExist:
         return Response({
-            "error": f"No questionnaire found for skill level: {skill}"
+            "error": f"No questionnaire found for skill level: {original_skill}"
         }, status=status.HTTP_404_NOT_FOUND)

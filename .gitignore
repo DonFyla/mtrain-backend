@@ -1,8 +1,37 @@
+# Python
 *.pyc
 __pycache__/
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Django
 *.sqlite3
+
+*.log
+local_settings.py
+
+# Environment variables
 .env
 .env.local
 .env.production
+.env.production.local
+
+# Static files
 staticfiles/
+mediafiles/
+media/
+
+# OS
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Database
+*.db
