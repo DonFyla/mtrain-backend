@@ -20,7 +20,7 @@ def QtakerView(request):
                 all_questions = Question.objects.filter(questionnaire=questionnaire)
                 
                 # Define how many questions per session
-                QUESTIONS_PER_SESSION = 2  # Adjust as needed
+                QUESTIONS_PER_SESSION = 10  # Adjust as needed
                 
                 if all_questions.exists():
                     # Randomize questions and limit to session count
@@ -105,7 +105,7 @@ def quiz(request, Qtakerid, question_id):
         else:
             # Fallback - create new set
             all_questions = Question.objects.filter(questionnaire=questionnaire)
-            QUESTIONS_PER_SESSION = 2
+            QUESTIONS_PER_SESSION = 10
             
             if all_questions.exists():
                 question_count = all_questions.count()
@@ -128,7 +128,7 @@ def quiz(request, Qtakerid, question_id):
         current_index = question_ids.index(current_question.id)
         next_question_id = question_ids[current_index + 1] if current_index + 1 < len(question_ids) else None
 
-        
+
         if request.method == "POST":
             serializer = AnswerFormSerializer(data=request.data, question=current_question)
             if serializer.is_valid():
