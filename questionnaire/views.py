@@ -263,7 +263,7 @@ def result(request, Qtakerid):
                     
                     if all_questions.exists():
                         # Create the randomized question set for the NEXT level
-                        QUESTIONS_PER_SESSION = 2
+                        QUESTIONS_PER_SESSION = 10
                         question_count = all_questions.count()
                         questions_to_take = min(QUESTIONS_PER_SESSION, question_count)
                         
