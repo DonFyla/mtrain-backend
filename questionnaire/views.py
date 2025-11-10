@@ -20,7 +20,7 @@ def QtakerView(request):
                 all_questions = Question.objects.filter(questionnaire=questionnaire)
                 
                 # Define how many questions per session
-                QUESTIONS_PER_SESSION = 10  # Adjust as needed
+                QUESTIONS_PER_SESSION = 4  # Adjust as needed
                 
                 if all_questions.exists():
                     # Randomize questions and limit to session count
@@ -105,7 +105,7 @@ def quiz(request, Qtakerid, question_id):
         else:
             # Fallback - create new set
             all_questions = Question.objects.filter(questionnaire=questionnaire)
-            QUESTIONS_PER_SESSION = 10
+            QUESTIONS_PER_SESSION = 4
             
             if all_questions.exists():
                 question_count = all_questions.count()
@@ -263,7 +263,7 @@ def result(request, Qtakerid):
                     
                     if all_questions.exists():
                         # Create the randomized question set for the NEXT level
-                        QUESTIONS_PER_SESSION = 10
+                        QUESTIONS_PER_SESSION = 4
                         question_count = all_questions.count()
                         questions_to_take = min(QUESTIONS_PER_SESSION, question_count)
                         
