@@ -25,10 +25,15 @@ class Qtaker(models.Model):
     name = models.CharField(null=False, max_length=100 )
     age = models.IntegerField(blank=False, null=False)
     email = models.EmailField(null=True)
+    current_question_set = models.JSONField(null=True, blank=True, default=list)
+    next_question_set = models.JSONField(null=True, blank=True, default=list) 
     date_taken = models.DateTimeField(auto_now_add=True,verbose_name="Event Date and Time")
     skill = models.CharField(choices=chess_level, default="beginner", max_length=100)
     test_result = models.FloatField(null=True)
-    current_score = models.IntegerField(default=0)
+    current_score = models.IntegerField(default=0)    
+
+    def __str__(self):
+        return self.name
 
     @classmethod
     def get_next_skill(cls, current_skill):
