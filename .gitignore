@@ -21,7 +21,7 @@ local_settings.py
 # Static files
 staticfiles/
 mediafiles/
-media/
+
 
 # OS
 .DS_Store
