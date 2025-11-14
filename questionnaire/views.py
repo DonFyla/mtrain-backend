@@ -20,7 +20,7 @@ def QtakerView(request):
                 all_questions = Question.objects.filter(questionnaire=questionnaire)
                 
                 # Define how many questions per session
-                QUESTIONS_PER_SESSION = 4  # Adjust as needed
+                QUESTIONS_PER_SESSION = 5  # Adjust as needed
                 
                 if all_questions.exists():
                     # Randomize questions and limit to session count
@@ -80,7 +80,7 @@ def quiz(request, Qtakerid, question_id):
         questionnaire = Questionnaire.objects.get(title=skill)
         
         # Check if we have a next_question_set (for starting new level)
-        if hasattr(qtaker, 'next_question_set') and qtaker.next_question_set and len(qtaker.next_question_set) > 0:
+        if getattr(qtaker, 'next_question_set', None):
             # Move next_question_set to current_question_set
             qtaker.current_question_set = qtaker.next_question_set
             qtaker.next_question_set = []  # Clear it
@@ -89,7 +89,7 @@ def quiz(request, Qtakerid, question_id):
             current_question = Question.objects.get(id=question_ids[0])
             
         # Check if we have a current_question_set
-        elif hasattr(qtaker, 'current_question_set') and qtaker.current_question_set and len(qtaker.current_question_set) > 0:
+        elif getattr(qtaker, 'current_question_set', None):
             question_ids = qtaker.current_question_set
             
             # Find current question in the set
@@ -105,7 +105,7 @@ def quiz(request, Qtakerid, question_id):
         else:
             # Fallback - create new set
             all_questions = Question.objects.filter(questionnaire=questionnaire)
-            QUESTIONS_PER_SESSION = 4
+            QUESTIONS_PER_SESSION = 5
             
             if all_questions.exists():
                 question_count = all_questions.count()
@@ -186,7 +186,7 @@ def view_answer(request, Qtakerid, id):
     correct_answer = Options.objects.filter(question=question, correct=True).first()
     
     # Get next question based on randomized set or fallback
-    if hasattr(qtaker, 'current_question_set') and qtaker.current_question_set:
+    if getattr(qtaker, 'current_question_set', None):
         question_ids = qtaker.current_question_set
         try:
             current_index = question_ids.index(question.id)
@@ -240,7 +240,7 @@ def result(request, Qtakerid):
     try:
         questionnaire = Questionnaire.objects.get(title=original_skill)
         
-        if hasattr(qtaker, 'current_question_set') and qtaker.current_question_set:
+        if getattr(qtaker, 'current_question_set', None):
             total_questions_in_session = len(qtaker.current_question_set)
         else:
             total_questions_in_session = Question.objects.filter(questionnaire=questionnaire).count()
@@ -263,7 +263,7 @@ def result(request, Qtakerid):
                     
                     if all_questions.exists():
                         # Create the randomized question set for the NEXT level
-                        QUESTIONS_PER_SESSION = 4
+                        QUESTIONS_PER_SESSION = 5
                         question_count = all_questions.count()
                         questions_to_take = min(QUESTIONS_PER_SESSION, question_count)
                         
