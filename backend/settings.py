@@ -382,14 +382,16 @@ STATICFILES_DIRS = [BASE_DIR / "static"]  # Changed from "app_static" to "static
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+
 if not DEBUG:
-    # Ensure media files are served in production
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-    
-    # You might need to configure a cloud storage for media files in production
-    # For now, let's make sure the paths are consistent
-    MEDIA_ROOT = BASE_DIR / 'media'
+
+# Local default
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# If Railway volume is mounted, use it instead
+if os.path.exists('/app/media'):
+    MEDIA_ROOT = '/app/media'
 
 # For CKEditor
 CKEDITOR_UPLOAD_PATH = "uploads/"
