@@ -10,13 +10,13 @@ class Userform(forms.ModelForm):
 
 
 class AnswerForm(forms.Form):
-    options = forms.ModelChoiceField(
-        queryset=Options.objects.all(), widget=forms.RadioSelect
-    )
+   def __init__(self, *args, **kwargs):
+       question = kwargs.pop("question")
+       super().__init__(*args, **kwargs)
 
-    def __init__(self, *args, **kwargs):
-        question = kwargs.pop("question")
-        super().__init__(*args, **kwargs)
-
-        self.fields["options"].queryset = Options.objects.filter(question=question)
-        
+       if question.question_type == "radio":
+           self.fields["answer"] = forms.ModelChoiceField(queryset=Options.objects.filter(question=question),
+           widget=forms.RadioSelect, required=True, empty_label=None)
+       elif question.question_type == "text":
+           self.fields["answer"] = forms.CharField(widget=forms.Textarea(attrs={"rows":4}), required=True, max_length=1000)
+           

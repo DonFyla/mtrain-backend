@@ -37,18 +37,27 @@ class UserformSerializer(serializers.ModelSerializer):
         fields = ['name', 'age', 'email', 'skill']
         # No longer excluding test_result since it's read-only
 
-class AnswerFormSerializer(serializers.ModelSerializer):
-    options = serializers.PrimaryKeyRelatedField(
-        queryset=Options.objects.all()
-    )
+# class AnswerFormSerializer(serializers.ModelSerializer):
+#     options = serializers.PrimaryKeyRelatedField(
+#         queryset=Options.objects.all()
+#     )
 
-    def __init__(self, *args, **kwargs):
-        question = kwargs.pop("question", None)
-        super().__init__(*args, **kwargs)
+#     def __init__(self, *args, **kwargs):
+#         question = kwargs.pop("question", None)
+#         super().__init__(*args, **kwargs)
 
-        if question:
-            self.fields["options"].queryset = Options.objects.filter(question=question)
+#         if question:
+#             self.fields["options"].queryset = Options.objects.filter(question=question)
 
-    class Meta:
-        model = Options
-        fields = ['options']
+#     class Meta:
+#         model = Options
+#         fields = ['options']
+
+class AnswerFormSerializer(serializers.Serializer):
+    answer = serializers.CharField(trim_whitespace=True)
+
+    def validate_answer(self, value):
+        """optional: guarantee non-empty"""
+        if not value:
+            raise serializers.ValidationError("Answer cannot be empty.")
+        return value

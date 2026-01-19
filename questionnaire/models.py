@@ -31,6 +31,8 @@ class Qtaker(models.Model):
     skill = models.CharField(choices=chess_level, default="beginner", max_length=100)
     test_result = models.FloatField(null=True)
     current_score = models.IntegerField(default=0)    
+    last_question_id = models.PositiveIntegerField(null=True, blank=True)
+    last_text_answer = models.CharField(max_length=2000, blank=True, default='')
 
     def __str__(self):
         return self.name
@@ -49,8 +51,10 @@ class Qtaker(models.Model):
 
 
 class Question(models.Model):
+    QUESTION_TYPES =[("text","Text Answer"),("radio", "Single Choice(checkbox)")]
     
     questionnaire = models.ForeignKey(Questionnaire, on_delete=models.CASCADE)
+    question_type = models.CharField(choices=QUESTION_TYPES, max_length=20, default="radio")
     question = RichTextUploadingField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
