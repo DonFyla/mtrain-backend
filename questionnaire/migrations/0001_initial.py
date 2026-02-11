@@ -31,6 +31,7 @@ class Migration(migrations.Migration):
                 (
                     "skill",
                     models.CharField(
+                        max_length=20,
                         choices=[
                             ("beginner", "Beginner"),
                             ("intermediate", "Intermediate"),

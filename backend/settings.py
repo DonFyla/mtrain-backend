@@ -404,3 +404,23 @@ CKEDITOR_CONFIGS = {
         'filebrowserBrowseUrl': '/ckeditor/browse/',
     },
 }
+
+# Test settings
+if 'test' in os.sys.argv or 'test_coverage' in os.sys.argv:
+    # Use file-based database for tests (CKEditor compatibility)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'test_db.sqlite3',
+        }
+    }
+    # Speed up password hashing in tests
+    PASSWORD_HASHERS = [
+        'django.contrib.auth.hashers.MD5PasswordHasher',
+    ]
+    # Disable debug mode for tests
+    DEBUG = False
+    # Use console email backend
+    EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
+    # Allow testserver for Django test client
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'testserver']
