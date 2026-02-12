@@ -54,14 +54,11 @@ class BaseTestCase(APITestCase):
             created_by=self.admin_user
         )
         
-        # Create questions for beginner level (radio type)
+        # Create questions for all levels (radio type for consistent testing)
+        # Note: Specific tests for text/mixed questions create their own data
         self.create_radio_questions(self.beginner_qn, count=10)
-        
-        # Create questions for intermediate level (mix of radio and text)
-        self.create_mixed_questions(self.intermediate_qn, count=10)
-        
-        # Create questions for expert level (mostly text)
-        self.create_text_questions(self.expert_qn, count=10)
+        self.create_radio_questions(self.intermediate_qn, count=10)
+        self.create_radio_questions(self.expert_qn, count=10)
     
     def create_radio_questions(self, questionnaire, count=5):
         """Create radio type questions with options."""
@@ -206,14 +203,14 @@ class QtakerCreationTests(BaseTestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
     
     def test_create_qtaker_invalid_skill(self):
-        """Test creating qtaker with invalid skill level."""
+        """Test creating qtaker with invalid skill level returns 400."""
         response = self.client.post('/questionnaire/api/qtaker/', {
             'name': 'Test User',
             'age': 25,
             'skill': 'invalid_skill'
         }, format='json')
-        # Should still create but skill validation happens at model level
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        # Serializer validates skill choices and returns 400 for invalid skill
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
     
     def test_create_qtaker_missing_name(self):
         """Test creating qtaker without name."""
@@ -323,44 +320,60 @@ class QuizFlowTests(BaseTestCase):
     
     def test_submit_text_answer_correct(self):
         """Test submitting correct text answer (case insensitive)."""
-        # Create intermediate qtaker (has text questions)
-        response = self.create_qtaker(skill='intermediate')
+        # Create a text question
+        text_q = Question.objects.create(
+            questionnaire=self.beginner_qn,
+            question_type='text',
+            question='<p>Text question?</p>',
+            placement=1,
+            created_by=self.admin_user
+        )
+        Options.objects.create(question=text_q, text='Correct Answer', correct=True)
+        
+        response = self.create_qtaker(skill='beginner')
         qtaker_id = response.data['qtaker_id']
-        qid = response.data['question_id']
         
-        # Get question
-        response = self.client.get(f'/questionnaire/api/quiz/{qtaker_id}/{qid}/')
+        # Manually set the question set to include our text question
+        qtaker = Qtaker.objects.get(id=qtaker_id)
+        qtaker.current_question_set = [text_q.id]
+        qtaker.save()
         
-        if response.data['question']['question_type'] == 'text':
-            # Get correct answer
-            question = Question.objects.get(id=qid)
-            correct_opt = Options.objects.get(question=question, correct=True)
-            
-            # Test case insensitivity
-            response = self.client.post(
-                f'/questionnaire/api/quiz/{qtaker_id}/{qid}/',
-                {'answer': correct_opt.text.upper()},  # Uppercase
-                format='json'
-            )
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            self.assertTrue(response.data['is_correct'])
+        # Test case insensitivity
+        response = self.client.post(
+            f'/questionnaire/api/quiz/{qtaker_id}/{text_q.id}/',
+            {'answer': 'CORRECT ANSWER'},  # Uppercase
+            format='json'
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['is_correct'])
     
     def test_submit_text_answer_incorrect(self):
         """Test submitting incorrect text answer."""
-        response = self.create_qtaker(skill='intermediate')
+        # Create a text question
+        text_q = Question.objects.create(
+            questionnaire=self.beginner_qn,
+            question_type='text',
+            question='<p>Text question?</p>',
+            placement=1,
+            created_by=self.admin_user
+        )
+        Options.objects.create(question=text_q, text='Correct Answer', correct=True)
+        
+        response = self.create_qtaker(skill='beginner')
         qtaker_id = response.data['qtaker_id']
-        qid = response.data['question_id']
         
-        response = self.client.get(f'/questionnaire/api/quiz/{qtaker_id}/{qid}/')
+        # Manually set the question set to include our text question
+        qtaker = Qtaker.objects.get(id=qtaker_id)
+        qtaker.current_question_set = [text_q.id]
+        qtaker.save()
         
-        if response.data['question']['question_type'] == 'text':
-            response = self.client.post(
-                f'/questionnaire/api/quiz/{qtaker_id}/{qid}/',
-                {'answer': 'completely wrong answer'},
-                format='json'
-            )
-            self.assertEqual(response.status_code, status.HTTP_200_OK)
-            self.assertFalse(response.data['is_correct'])
+        response = self.client.post(
+            f'/questionnaire/api/quiz/{qtaker_id}/{text_q.id}/',
+            {'answer': 'completely wrong answer'},
+            format='json'
+        )
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data['is_correct'])
     
     def test_get_nonexistent_question(self):
         """Test error when question doesn't exist."""
@@ -801,6 +814,193 @@ class MultipleAttemptsTests(BaseTestCase):
         
         # After many attempts, should end up at expert
         self.assertEqual(current_skill, 'expert')
+    
+    def test_20_attempts_always_fail_stay_beginner_complete_5_questions(self):
+        """
+        CRITICAL TEST: Same user takes quiz 20 times, always fails,
+        always stays at beginner level, and always completes all 5 questions.
+        
+        This ensures:
+        - User gets exactly 5 questions every attempt
+        - User never passes (always <= 60% score)
+        - User skill never progresses from beginner
+        - Quiz can be restarted indefinitely
+        """
+        user_email = "alwaysfail@test.com"
+        user_name = "Always Fail User"
+        
+        results = []
+        
+        for attempt in range(1, 21):
+            with self.subTest(attempt=attempt):
+                # Create new qtaker (same user info, new session)
+                response = self.create_qtaker(
+                    name=user_name,
+                    email=user_email,
+                    age=25,
+                    skill='beginner'
+                )
+                self.assertEqual(
+                    response.status_code,
+                    status.HTTP_201_CREATED,
+                    f"Failed to create qtaker on attempt {attempt}"
+                )
+                
+                qtaker_id = response.data['qtaker_id']
+                qtaker = Qtaker.objects.get(id=qtaker_id)
+                
+                # CRITICAL: Verify user gets exactly 5 questions
+                self.assertIsNotNone(
+                    qtaker.current_question_set,
+                    f"Attempt {attempt}: Question set should not be None"
+                )
+                self.assertEqual(
+                    len(qtaker.current_question_set),
+                    5,
+                    f"Attempt {attempt}: User should get exactly 5 questions"
+                )
+                
+                # CRITICAL: Verify fresh state (score reset)
+                self.assertEqual(
+                    qtaker.current_score,
+                    0,
+                    f"Attempt {attempt}: Score should start at 0"
+                )
+                
+                # CRITICAL: Verify skill is beginner
+                self.assertEqual(
+                    qtaker.skill,
+                    'beginner',
+                    f"Attempt {attempt}: Skill should be beginner"
+                )
+                
+                # Answer all questions INCORRECTLY (to ensure failure)
+                # Answer 0 correct out of 5 (0% score) - this will definitely fail
+                question_ids = qtaker.current_question_set[:5]
+                
+                for i, qid in enumerate(question_ids):
+                    # Get the question first to check its type
+                    q_response = self.client.get(f'/questionnaire/api/quiz/{qtaker_id}/{qid}/')
+                    self.assertEqual(
+                        q_response.status_code,
+                        status.HTTP_200_OK,
+                        f"Attempt {attempt}: Failed to get question {i+1}"
+                    )
+                    
+                    question_data = q_response.data['question']
+                    
+                    # Submit wrong answer based on question type
+                    if question_data['question_type'] == 'radio':
+                        # For radio, pick any wrong option (find one with correct=False)
+                        options = question_data['options']
+                        wrong_options = [o for o in options if not o['correct']]
+                        if wrong_options:
+                            answer = str(wrong_options[0]['id'])
+                        else:
+                            # Fallback: use any option (shouldn't happen with test data)
+                            answer = str(options[0]['id'])
+                    else:
+                        # For text, submit wrong text answer
+                        answer = "completely_wrong_answer"
+                    
+                    response = self.client.post(
+                        f'/questionnaire/api/quiz/{qtaker_id}/{qid}/',
+                        {'answer': answer},
+                        format='json'
+                    )
+                    self.assertEqual(
+                        response.status_code,
+                        status.HTTP_200_OK,
+                        f"Attempt {attempt}: Failed to submit answer for question {i+1}"
+                    )
+                    
+                    # Verify the answer was incorrect
+                    self.assertFalse(
+                        response.data['is_correct'],
+                        f"Attempt {attempt}: Answer should have been incorrect for question {i+1}"
+                    )
+                
+                # Get result
+                response = self.client.get(f'/questionnaire/api/result/{qtaker_id}/')
+                self.assertEqual(
+                    response.status_code,
+                    status.HTTP_200_OK,
+                    f"Attempt {attempt}: Failed to get result"
+                )
+                
+                # CRITICAL: Verify user failed (<= 60%)
+                self.assertFalse(
+                    response.data['passed'],
+                    f"Attempt {attempt}: User should have failed (needed <= 60%)"
+                )
+                self.assertLessEqual(
+                    response.data['percentage'],
+                    60.0,
+                    f"Attempt {attempt}: Percentage should be <= 60%"
+                )
+                
+                # CRITICAL: Verify no progression (no next_skill)
+                self.assertIsNone(
+                    response.data.get('next_skill'),
+                    f"Attempt {attempt}: Should not have next_skill (failed)"
+                )
+                
+                # CRITICAL: Verify skill stayed at beginner
+                qtaker.refresh_from_db()
+                self.assertEqual(
+                    qtaker.skill,
+                    'beginner',
+                    f"Attempt {attempt}: Skill should remain beginner after fail"
+                )
+                
+                results.append({
+                    'attempt': attempt,
+                    'qtaker_id': qtaker_id,
+                    'questions_count': len(qtaker.current_question_set),
+                    'passed': response.data['passed'],
+                    'percentage': response.data['percentage'],
+                    'skill': qtaker.skill
+                })
+        
+        # Final verification summary
+        self.assertEqual(len(results), 20, "Should have 20 attempts")
+        
+        # Verify all attempts had exactly 5 questions
+        for r in results:
+            self.assertEqual(
+                r['questions_count'],
+                5,
+                f"Attempt {r['attempt']}: Did not have 5 questions"
+            )
+        
+        # Verify all attempts failed
+        failed_count = sum(1 for r in results if not r['passed'])
+        self.assertEqual(
+            failed_count,
+            20,
+            f"Expected all 20 attempts to fail, but {20 - failed_count} passed"
+        )
+        
+        # Verify all stayed at beginner
+        beginner_count = sum(1 for r in results if r['skill'] == 'beginner')
+        self.assertEqual(
+            beginner_count,
+            20,
+            f"Expected all 20 attempts to stay at beginner, but {20 - beginner_count} progressed"
+        )
+        
+        # Verify all qtaker IDs are unique (no duplicate sessions)
+        qtaker_ids = [r['qtaker_id'] for r in results]
+        self.assertEqual(
+            len(set(qtaker_ids)),
+            20,
+            "All sessions should have unique IDs"
+        )
+        
+        print(f"\n[SUCCESS] Completed 20 consecutive failed attempts")
+        print(f"  - All 20 attempts: 5 questions each")
+        print(f"  - All 20 attempts: FAILED (<= 60%)")
+        print(f"  - All 20 attempts: stayed at BEGINNER level")
 
 
 class EdgeCaseTests(BaseTestCase):
@@ -885,6 +1085,11 @@ class EdgeCaseTests(BaseTestCase):
     
     def test_special_characters_in_text_answer(self):
         """Test text answers with special characters."""
+        # Create qtaker first to get the question set
+        response = self.create_qtaker()
+        qtaker_id = response.data['qtaker_id']
+        qtaker = Qtaker.objects.get(id=qtaker_id)
+        
         # Create a text question with special characters in answer
         question = Question.objects.create(
             questionnaire=self.beginner_qn,
@@ -899,8 +1104,11 @@ class EdgeCaseTests(BaseTestCase):
             correct=True
         )
         
-        response = self.create_qtaker()
-        qtaker_id = response.data['qtaker_id']
+        # Add the new question to the qtaker's question set (replace last one)
+        question_set = qtaker.current_question_set
+        question_set[-1] = question.id
+        qtaker.current_question_set = question_set
+        qtaker.save()
         
         # Submit answer with different case and whitespace
         response = self.client.post(
@@ -918,22 +1126,17 @@ class PerformanceTests(BaseTestCase):
     
     def test_large_number_of_questions(self):
         """Test handling questionnaires with many questions."""
-        # Create questionnaire with 100 questions
-        large_qn = Questionnaire.objects.create(
-            title='large',
-            description='Large questionnaire',
-            created_by=self.admin_user
-        )
-        self.create_radio_questions(large_qn, count=100)
+        # Add 100 more questions to beginner (already has 10 from setUp)
+        self.create_radio_questions(self.beginner_qn, count=90)
         
         response = self.client.post('/questionnaire/api/qtaker/', {
             'name': 'Large Test',
             'age': 25,
-            'skill': 'large'
+            'skill': 'beginner'
         }, format='json')
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        # Should still only get 5 questions
+        # Should still only get 5 questions per session
         qtaker = Qtaker.objects.get(id=response.data['qtaker_id'])
         self.assertEqual(len(qtaker.current_question_set), 5)
     
@@ -1038,8 +1241,8 @@ class ModelTests(BaseTestCase):
             skill='beginner'
         )
         self.assertEqual(qtaker.current_score, 0)
-        self.assertEqual(qtaker.current_question_set, [])
-        self.assertEqual(qtaker.next_question_set, [])
+        self.assertIsNone(qtaker.current_question_set)
+        self.assertIsNone(qtaker.next_question_set)
         self.assertIsNone(qtaker.test_result)
 
 

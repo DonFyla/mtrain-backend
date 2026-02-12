@@ -35,8 +35,9 @@ def QtakerView(request):
                     qtaker.current_question_set = randomized_question_ids
                     qtaker.save()
                     
-                    # Get the first question from randomized set
-                    first_question = randomized_questions.first()
+                    # Get the first question from the IDs (not from queryset to avoid re-evaluation)
+                    first_question_id = randomized_question_ids[0] if randomized_question_ids else None
+                    first_question = Question.objects.get(id=first_question_id) if first_question_id else None
                     
                     response_data = {
                         "qtaker_id": qtaker.id,
@@ -95,9 +96,16 @@ def quiz(request, Qtakerid, question_id):
             try:
                 current_question = Question.objects.get(id=question_id)
                 if current_question.id not in question_ids:
-                    current_question = Question.objects.get(id=question_ids[0])
+                    # Return 404 if question is not in the current question set
+                    return Response(
+                        {'error': f'Question {question_id} not found in current session'}, 
+                        status=status.HTTP_404_NOT_FOUND
+                    )
             except (Question.DoesNotExist, ValueError):
-                current_question = Question.objects.get(id=question_ids[0])
+                return Response(
+                    {'error': f'Question {question_id} not found'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
         else:
             current_question = Question.objects.get(id=question_ids[0])
     else:

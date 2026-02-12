@@ -55,11 +55,11 @@ def run_tests(test_labels=None, verbosity=2, failfast=False, parallel=False):
     
     print("\n" + "=" * 70)
     if failures:
-        print(f"❌ TESTS FAILED: {failures} failure(s)")
+        print(f"[FAIL] TESTS FAILED: {failures} failure(s)")
         print("=" * 70)
         sys.exit(1)
     else:
-        print("✅ ALL TESTS PASSED")
+        print("[PASS] ALL TESTS PASSED")
         print("=" * 70)
         sys.exit(0)
 
@@ -141,6 +141,7 @@ Examples:
             print(f"  {tc}")
         print("\nKey tests:")
         print("  questionnaire.tests.MultipleAttemptsTests.test_same_user_20_consecutive_attempts")
+        print("  questionnaire.tests.MultipleAttemptsTests.test_20_attempts_always_fail_stay_beginner_complete_5_questions")
         print("  questionnaire.tests.SkillProgressionTests.test_beginner_to_intermediate_progression")
         print()
         return
